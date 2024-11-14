@@ -68,7 +68,7 @@ namespace MudBlazor
 
         private bool _collectionOpen;
 
-        private readonly Guid _id = Guid.NewGuid();
+        private readonly string _id = Identifier.Create();
 
         private ThrottleDispatcher _throttleDispatcher;
 
@@ -289,6 +289,16 @@ namespace MudBlazor
         [Parameter]
         [Category(CategoryTypes.FormComponent.PickerAppearance)]
         public string CloseIcon { get; set; } = Icons.Material.Filled.Close;
+
+        /// <summary>
+        /// The icon to display for the gradient mode button.
+        /// </summary>
+        /// <remarks>
+        /// Defaults to <see cref="Icons.Material.Filled.Gradient"/>.
+        /// </remarks>
+        [Parameter]
+        [Category(CategoryTypes.FormComponent.PickerAppearance)]
+        public string GradientIcon { get; set; } = Icons.Material.Filled.Gradient;
 
         /// <summary>
         /// The icon to display for the spectrum mode button.
