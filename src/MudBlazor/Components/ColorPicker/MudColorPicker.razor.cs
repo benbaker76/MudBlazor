@@ -20,6 +20,12 @@ namespace MudBlazor
     /// </summary>
     public partial class MudColorPicker : MudPicker<MudColor>
     {
+        public enum PaletteType
+        {
+            Main,
+            Grid
+        };
+
         private readonly ParameterState<int> _throttleIntervalState;
 
         public MudColorPicker() : base(new DefaultConverter<MudColor>())
@@ -47,8 +53,8 @@ namespace MudBlazor
             { 5, ((x) => 255, x => 0, x => 255 - x, "rg") },
         };
 
-        private const double _maxY = 250;
-        private const double _maxX = 312;
+        private const double _maxY = 256;
+        private const double _maxX = 256;
         private const double _selectorSize = 26.0;
 
         private double _selectorX;
@@ -57,9 +63,12 @@ namespace MudBlazor
 
         private MudColor _baseColor;
 
+        private int _selectedIndex { get; set; } = -1;
+        private bool _selectedIndexChanged;
+
         private bool _collectionOpen;
 
-        private readonly string _id = Identifier.Create();
+        private readonly Guid _id = Guid.NewGuid();
 
         private ThrottleDispatcher _throttleDispatcher;
 
@@ -214,6 +223,22 @@ namespace MudBlazor
         public EventCallback<MudColor> ValueChanged { get; set; }
 
         /// <summary>
+        /// The currently selected color index.
+        /// </summary>
+        /// <remarks>
+        /// This is the index of the currently selected color.  When this value changes, the <see cref="SelectedIndexChanged"/> event occurs.
+        /// </remarks>
+        [Parameter]
+        [Category(CategoryTypes.FormComponent.Data)]
+        public int SelectedIndex { get; set; } = -1;
+
+        /// <summary>
+        /// Occurs when the <see cref="SelectedIndex"/> property has changed.
+        /// </summary>
+        [Parameter]
+        public EventCallback<int> SelectedIndexChanged { get; set; }
+
+        /// <summary>
         /// The list of quick colors to display.
         /// </summary>
         /// <remarks>
@@ -221,7 +246,7 @@ namespace MudBlazor
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.FormComponent.PickerBehavior)]
-        public IEnumerable<MudColor> Palette { get; set; } = new MudColor[]
+        public List<MudColor> Palette { get; set; } = new List<MudColor>
         { "#424242", "#2196f3", "#00c853", "#ff9800", "#f44336",
           "#f6f9fb", "#9df1fa", "#bdffcf", "#fff0a3", "#ffd254",
           "#e6e9eb", "#27dbf5", "#7ef7a0", "#ffe273", "#ffb31f",
@@ -231,7 +256,7 @@ namespace MudBlazor
           "#353940", "#113b53", "#127942", "#bf7d11", "#aa0000"
         };
 
-        private IEnumerable<MudColor> _gridList = new MudColor[]
+        private List<MudColor> _gridList = new List<MudColor>()
         {
             "#FFFFFF","#ebebeb","#d6d6d6","#c2c2c2","#adadad","#999999","#858586","#707070","#5c5c5c","#474747","#333333","#000000",
             "#133648","#071d53","#0f0638","#2a093b","#370c1b","#541107","#532009","#53350d","#523e0f","#65611b","#505518","#2b3d16",
@@ -341,8 +366,14 @@ namespace MudBlazor
             _collectionOpen = !_collectionOpen;
         }
 
-        private async Task SelectPaletteColorAsync(MudColor color)
+        private async Task SelectPaletteColorAsync(PaletteType paletteType, int selectedIndex, MudColor color)
         {
+            if (paletteType == PaletteType.Main)
+            {
+                _selectedIndex = selectedIndex;
+                _selectedIndexChanged = true;
+            }
+
             Value = color;
             _collectionOpen = false;
 
@@ -396,13 +427,17 @@ namespace MudBlazor
                 UpdateColorSelectorBasedOnRgb();
             }
 
-            if (shouldUpdateBinding)
+            if (shouldUpdateBinding || _selectedIndexChanged)
             {
                 Touched = true;
                 await SetTextAsync(GetColorTextValue(), false);
+                if (_selectedIndexChanged)
+                    await SelectedIndexChanged.InvokeAsync(_selectedIndex);
                 await ValueChanged.InvokeAsync(value);
                 await BeginValidateAsync();
                 FieldChanged(value);
+
+                _selectedIndexChanged = false;
             }
         }
 
@@ -650,10 +685,10 @@ namespace MudBlazor
 
         private EventCallback<MouseEventArgs> GetEventCallback() => EventCallback.Factory.Create<MouseEventArgs>(this, () => CloseAsync());
         private bool IsAnyControlVisible() => ShowPreview || ShowSliders || ShowInputs;
-        private EventCallback<MouseEventArgs> GetSelectPaletteColorCallback(MudColor color) => new EventCallbackFactory().Create(this, (MouseEventArgs _) => SelectPaletteColorAsync(color));
+        private EventCallback<MouseEventArgs> GetSelectPaletteColorCallback(PaletteType paletteType, int selectedIndex, MudColor color) => new EventCallbackFactory().Create(this, (MouseEventArgs _) => SelectPaletteColorAsync(paletteType, selectedIndex, color));
 
         private Color GetButtonColor(ColorPickerView view) => _activeColorPickerView == view ? Color.Primary : Color.Inherit;
-        private string GetColorDotClass(MudColor color) => new CssBuilder("mud-picker-color-dot").AddClass("selected", color == Value).ToString();
+        private string GetColorDotClass(int index) => new CssBuilder("mud-picker-color-dot").AddClass("selected", index == _selectedIndex).ToString();
         private string AlphaSliderStyle => new StyleBuilder().AddStyle($"background-image: linear-gradient(to {(RightToLeft ? "left" : "right")}, transparent, {_value.ToString(MudColorOutputFormats.RGB)})").Build();
 
         #endregion
