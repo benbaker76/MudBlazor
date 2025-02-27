@@ -1,0 +1,546 @@
+﻿@namespace MudBlazor
+@using System.Globalization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using MudBlazor.Interop
+@using MudBlazor.Resources
+@using MudBlazor.Utilities
+@inherits MudPicker<Gradient>
+@inject InternalMudLocalizer Localizer
+@inject HttpClient HttpClient
+@inject IJSRuntime JsRuntime
+
+<style>
+.gradient-background {
+    background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAChJREFUeNpiPHPmDAMMGBsbw9lMDDgA6RKM%2F%2F%2F%2Fh3POnj1LCzsAAgwAQtYIcFfEyzkAAAAASUVORK5CYII%3D");
+}
+
+.gradient-panel-background {
+    width: 300px;
+    height: 40px;
+}
+
+.gradient-panel {
+    width: 300px;
+    height: 40px;
+    border: 1px solid #999;
+}
+
+.stop-markers-container {
+    padding: 5px;
+}
+
+.gradient-control .stop-markers {
+    position: relative;
+    cursor: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAWCAYAAADAQbwGAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAJ1JREFUeNq8VAEKwCAITOn%2FX3ZzTBCxUicTBsvsOO9EIKJhAwCe5H0H4xBvLQgOegV8yZ8AZwJHc8zKI4c53bk6IGNqMH3GCJuMlkeG4p4G1e5Lq1KXatmCM7AdrbLLq7FC0agycx7oXOmk8%2FY%2FPNjRR7s6ZFHFqY5AcasLFDPtpAC7WH7aNkxgO9gdLNv3oWdKiKXX7r8bu6rlJcAA9ZRfMt5oHoIAAAAASUVORK5CYII%3D") 5 0, pointer;
+    width: 300px;
+    height: 20px;
+}
+
+.macos .gradient-control .stop-markers {
+    cursor: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAARCAYAAADdRIy%2BAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAelJREFUeNqMVDuPAVEYvbNEtYlniMRGiKg2NAoS2caj8Af8AL0foVdJVAqNBA2VxFYahQrR2ERCsokQCrG7xGu%2F%2Fe63TBgzEyc5zsx9nHvvd%2BZ6AgAmpdFoBMb4430f5xWcyI%2Bz%2FkM6OB6PwwVKplcwIX%2FOStAyCfr9PnsAfEdPyBfkF%2FIV%2BYn8vTPUaDSPGL4jn%2FlwpAVZRZ6Q33LHuTmyVqsldTqdEIvFzs20QxfyDTk7q4vapYY%2Bn080DAaD0Gw26TkQCIiLhMNhUKohmUQiETEAQRBo4ul0glwuJ5qn02nSUChEajabQTZlvhpHt9slU7fbDY9A8Qvw%2B%2F0wHo%2BlAwmdToe01WrB8XiEdrtN75PJRNmwWCyC1%2BuF9XpNg3e7HelyuQSTyUTtHo%2BH2iwWC%2BlgMFA25D%2BVSgUSicTNkWazGdXpcDjQ5Ol0Cna7nfqy2ay6IafNZqM6XrBYLOASkMPhgNVqBQaDQSxLrVZTNyyVSqDX66HX64mm%2BXyeNJVKkWYyGeAlUr3n1y%2FVahWsVisMh0PVdOv1uqKhILnsFFK5XGaFQoHpdDo2n8%2FZfr9no9GIYSgsGo3yiYLipZRbhdeTd8mRB6i0O9kdcjQaDdhut2yz2TC8y0RMnGFQLJlMCmr%2FGn8CDADjZb9gHU6eaQAAAABJRU5ErkJggg%3D%3D") 5 0, pointer;
+}
+
+.stop-marker {
+    user-select: none;
+    cursor: default;
+    width: 11px;
+    height: 17px;
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAARCAYAAADZsVyDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAJNJREFUeNrsU0EOgCAM2wi%2FgD%2FCU%2BCP%2FGOKiUZx03rwYGIvy5au6cZgEaERzDyXhQmAxXUacR8RUY3rNFErt5yWUs696yosEW1Mbfyx5pBxkV2Prj3SvHdjPVZKqddk23tP6AG6szvknGkRbq3dkmOMS0S5fk1CCObd1loPUyFcRy%2FhF%2F6wsLdO6goI9%2FHPQzEJMAB64VRGrQShWQAAAABJRU5ErkJggg%3D%3D");
+    background-position: right;
+    position: absolute;
+}
+
+.stop-marker.active {
+    background-position: left;
+}
+
+    .stop-marker .color {
+        position: absolute;
+        top: 8px;
+        left: 2px;
+        width: 7px;
+        height: 7px;
+    }
+
+.stop-markers-opacity .stop-marker {
+    top: 3px;
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAARCAYAAADZsVyDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAJZJREFUeNrsklkKxCAQRKuCt9BD6z08lvfIpBMNjkO7fORjIAWtNDwe7UIAOx6IkSWlNASdc1hhTWmstdTAEMLXqWbYDQ%2FlFf%2Bx2GhfqpcZ9pw4xjg9yQq7r9QR9Mp7f7HSTEpvdiQ9uQyP5ChiTV5Lb%2FFAjlbcylupFCspSKKRsbqCnxy8yFh29R9nAWtp99UVqeQjwAAiCM20qTyZHAAAAABJRU5ErkJggg%3D%3D");
+}
+
+    .stop-markers-opacity .stop-marker .color {
+        top: 2px;
+    }
+
+.presets {
+    width: 310px;
+}
+
+    .presets .presets-container {
+        margin: 4px;
+        border: 1px solid #ddd;
+        height: 56px;
+        overflow: auto;
+    }
+
+    .presets .preset-item-background {
+        width: 44px;
+        height: 44px;
+        border: 1px inset #000;
+        float: left;
+        display: block;
+        cursor: pointer;
+    }
+
+    .presets .preset-item {
+        width: 100%;
+        height: 100%;
+    }
+
+.gradient-name {
+    margin-top: 10px;
+    margin-left: 3px;
+    display: flex;
+    width: 98%;
+    align-items: center;
+}
+.dialog-panel {
+    position: relative;
+    width: 310px;
+    margin-top: 8px;
+}
+</style>
+
+@Render
+
+@code {
+    protected override RenderFragment PickerContent =>
+    @<CascadingValue Value="@this" IsFixed="true">
+        <MudPickerContent Class="gradient-control mud-picker-content">
+            <MudPickerToolbar ShowToolbar="@ShowToolbar" Class="mud-picker-color-toolbar">
+                <MudSpacer />
+                <MudIconButton title="Upload" Icon="@Icons.Material.Filled.Upload" Size="Size.Small" OnClick="() => _fileUpload.OpenFilePickerAsync()" />
+                <MudIconButton title="Download" Icon="@Icons.Material.Filled.Download" Size="Size.Small" OnClick="DownloadGradientCollection" />
+            </MudPickerToolbar>
+            <!-- Panel for displaying presets -->
+            <div class="presets dialog-panel noselect">
+                <div class="presets-container">
+                    @foreach (var gradient in GradientCollection.Gradients)
+                    {
+                        var gradientStyle = $"background: {gradient.ToString(135)};";
+                        <MudPaper Class="preset-item-background gradient-background" Elevation="1" @onclick="() => SetCurrentGradient(gradient)">
+                            <div class="preset-item has-preset-contextmenu" style="@gradientStyle"></div>
+                        </MudPaper>
+                    }
+                </div>
+            </div>
+            
+            <!-- Input for naming a new gradient and saving it -->
+            <div class="gradient-name">
+                <MudTextField T="string" Label="Preset Name" Class="name-input" @bind-Value="_gradientName" />
+                <!-- Hidden MudFileUpload that gets triggered by the upload icon -->
+                <MudFileUpload T="IBrowserFile" Accept=".grdx" FilesChanged="UploadGradientCollection" MaximumFileCount="1" @ref="_fileUpload" Style="display: none;"></MudFileUpload>
+                <MudIconButton title="Add" Icon="@Icons.Material.Filled.Add" Size="Size.Small" OnClick="AddToGradientCollection" />
+                <MudIconButton title="Delete" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="DeleteFromGradientCollection" />
+            </div>
+
+            <div class="stop-markers-container">
+                <!-- Opacity Stop Markers -->
+                <div @ref="_stopMarkersOpacityElement" class="stop-markers stop-markers-opacity noselect" @onmousedown="(e) => OnMouseDown(e)" @onmousemove="(e) => OnMouseMove(e)" @onmouseup="(e) => OnOpacityMouseUp(e)" @onmouseleave="(e) => OnMouseLeave(e)">
+                    @if (Value != null && Value.OpacityStops != null)
+                    {
+                        foreach (var stop in Value.OpacityStops)
+                        {
+                            var position = Math.Round(299 * stop.Position / 100 - 5);
+                            var positionStyle = $"left: {position}px;";
+                            var backgroundStyle = $"background: rgba(0, 0, 0, {stop.Opacity})";
+                            var stopStyle = $"left: {position}px; background: rgba(0, 0, 0, {stop.Opacity})";
+                            var markerClass = (SelectedStop == stop) ? "stop-marker active" : "stop-marker";
+                            <div class="@markerClass" style="@positionStyle" @onmousedown="() => SetSelectedStop(stop)">
+                                <div class="color" style="@backgroundStyle"></div>
+                            </div>
+                        }
+                    }
+                </div>
+
+                <!-- Gradient Preview Panel -->
+                <div class="gradient-panel-background gradient-background">
+                    <div class="gradient-panel noselect" style="@($"background: {Value.ToString()};")">
+                    </div>
+                </div>
+
+                <!-- Color Stop Markers -->
+                <div @ref="_stopMarkersColorElement" class="stop-markers stop-markers-color noselect" @onmousedown="(e) => OnMouseDown(e)" @onmousemove="(e) => OnMouseMove(e)" @onmouseup="(e) => OnColorMouseUp(e)" @onmouseleave="(e) => OnMouseLeave(e)">
+                    @if (Value != null && Value.ColorStops != null)
+                    {
+                        foreach (var stop in Value.ColorStops)
+                        {
+                            var position = Math.Round(299 * stop.Position / 100 - 5);
+                            var positionStyle = $"left: {position}px;";
+                            var backgroundStyle = $"background: {stop.Color.ToString(MudColorOutputFormats.RGB)}";
+                            var markerClass = (SelectedStop == stop) ? "stop-marker active" : "stop-marker";
+                            <div class="@markerClass" style="@positionStyle" @onmousedown="() => SetSelectedStop(stop)">
+                                <div class="color" style="@backgroundStyle"></div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+        <!-- Color and Opacity Stop Details -->
+        <div class="dialog-panel clearfix">
+            @if (true)
+            {
+            List<IGradientStop> selectedStop = new List<IGradientStop> { SelectedStop };
+
+                <MudTable T="@IGradientStop" Items="@selectedStop">
+                    <RowTemplate>
+                        <MudTr>
+                            <MudTd><MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Size="Size.Small"
+                                               OnClick="DeleteSelectedOpacityStop"
+                                               Disabled="@(IsColorStop || SelectedStop == null)"/>
+                            </MudTd>
+                            <MudTd>
+                                <MudTextField T="float"
+                                              Label="Location"
+                                              @bind-Value="StopPosition"
+                                              Format="F2"
+                                              Disabled="@(IsColorStop || SelectedStop == null)" />
+                            </MudTd>
+                            <MudTd>
+                                <MudTextField T="float"
+                                              Label="Opacity"
+                                              @bind-Value="OpacityValue"
+                                              Format="F2"
+                                              Disabled="@(IsColorStop || SelectedStop == null)" />
+                            </MudTd>
+                        </MudTr>
+                        <MudTr>
+                            <!-- Color Stop Controls -->
+                            <MudTd><MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Size="Size.Small"
+                                               OnClick="DeleteSelectedColorStop"
+                                               Disabled="@(IsOpacityStop || SelectedStop == null)" />
+                            </MudTd>
+                            <MudTd>
+                                <MudTextField T="float"
+                                              Label="Location"
+                                              @bind-Value="StopPosition"
+                                              Format="F2"
+                                              Disabled="@(IsOpacityStop || SelectedStop == null)" />
+                            </MudTd>
+                            <MudTd>
+                                <MudColorPicker @bind-Value="SelectedColor"
+                                                Label="Color"
+                                                ColorPickerView="ColorPickerView.Spectrum"
+                                                Disabled="@(IsOpacityStop || SelectedStop == null)" />
+                            </MudTd>
+                        </MudTr>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </div>
+        </MudPickerContent>
+    </CascadingValue>
+
+    ;
+
+    private ElementReference _stopMarkersOpacityElement;
+    private ElementReference _stopMarkersColorElement;
+
+    private string _gradientName { get; set; }
+
+    private IGradientStop SelectedStop { get; set; }
+
+    private bool _isDragging = false;
+    private bool _stopClicked = false;  // To track if a stop was clicked
+
+    private bool _colorPickerOpen;
+
+    private MudFileUpload<IBrowserFile> _fileUpload;
+
+    private void SetCurrentGradient(Gradient gradient)
+    {
+        Value = gradient;
+
+        _gradientName = gradient.Name;
+    }
+
+    private void SetSelectedStop(IGradientStop stop)
+    {
+        SelectedStop = stop;
+        _isDragging = true;
+        _stopClicked = true;  // Mark that a stop was clicked
+    }
+
+    private void DeleteSelectedColorStop()
+    {
+        if (Value == null)
+            return;
+
+        if (SelectedStop is ColorStop colorStop)
+        {
+            Value.ColorStops.Remove(colorStop);
+            SelectedStop = null; // Deselect after removal
+        }
+    }
+
+    private void DeleteSelectedOpacityStop()
+    {
+        if (Value == null)
+            return;
+
+        if (SelectedStop is OpacityStop opacityStop)
+        {
+            Value.OpacityStops.Remove(opacityStop);
+            SelectedStop = null; // Deselect after removal
+        }
+    }
+
+    private async Task AddToGradientCollection()
+    {
+        if (Value == null)
+            return;
+
+        Gradient newGradient = (Gradient)Value.Clone();
+        newGradient.Name = _gradientName;
+        GradientCollection.Gradients.Insert(0, newGradient);
+        Value = newGradient;
+
+        await UpdateGradient();
+    }
+
+    private async Task DeleteFromGradientCollection()
+    {
+        if (Value == null)
+            return;
+        
+        if (GradientCollection.Gradients.Count == 0)
+            return;
+
+        var index = GradientCollection.Gradients.IndexOf(Value);
+        GradientCollection.Gradients.RemoveAt(index);
+        index = Math.Min(index, GradientCollection.Gradients.Count - 1);
+        Value = GradientCollection.Gradients[index];
+        SelectedStop = null;
+
+        await UpdateGradient();
+    }
+
+    private async Task UploadGradientCollection(IBrowserFile file)
+    {
+        using (Stream stream = file.OpenReadStream(1024 * 1024 * 1024))
+            await GradientCollection.ReadGradientCollection(stream);
+    }
+
+    private async Task DownloadGradientCollection()
+    {
+        using (var memoryStream = new MemoryStream())
+        {
+            // Write the gradient collection to a memory stream
+            GradientCollection.WriteGradientCollection(memoryStream);
+
+            // Reset the stream position to the beginning
+            memoryStream.Position = 0;
+
+            // Call the JavaScript function to download the file
+            await JsRuntime.InvokeVoidAsync("downloadFileFromStream", "gradient.grdx", new DotNetStreamReference(memoryStream));
+        }
+    }
+
+    private async Task AddColorStop(MouseEventArgs e)
+    {
+        var rect = await ElementReferenceExtensions.MudGetBoundingClientRectAsync(_stopMarkersColorElement);
+        var newPos = (float)((e.ClientX - rect.Left) / rect.Width * 100);
+
+        if (Value.ColorStops == null)
+            Value.ColorStops = new List<ColorStop>();
+
+        MudColor closestColor = new MudColor(); // Default color if none exists
+
+        // Find the previous stop if it exists
+        var closestStop = Value.ColorStops
+                            .OrderBy(c => Math.Abs(c.Position - newPos))
+                            .FirstOrDefault();
+
+        if (closestStop != null)
+            closestColor = closestStop.Color;
+
+        var colorStop = new ColorStop(newPos, closestColor);
+
+        SelectedStop = colorStop;
+
+        Value.AddStop(colorStop);
+
+        await UpdateGradient();
+    }
+
+    private async Task AddOpacityStop(MouseEventArgs e)
+    {
+        var rect = await ElementReferenceExtensions.MudGetBoundingClientRectAsync(_stopMarkersOpacityElement);
+        var newPos = (float)((e.ClientX - rect.Left) / rect.Width * 100);
+
+        if (Value.OpacityStops == null)
+            Value.OpacityStops = new List<OpacityStop>();
+
+        var opacityStop = new OpacityStop(newPos, 1f);
+
+        SelectedStop = opacityStop;
+
+        Value.AddStop(opacityStop);
+
+        await UpdateGradient();
+    }
+
+    private void OpenColorPicker()
+    {
+        _colorPickerOpen = !_colorPickerOpen;
+    }
+
+    private void OnMouseDown(MouseEventArgs e)
+    {
+        // If no stop marker was clicked, deselect the stop
+        if (!_stopClicked)
+        {
+            SelectedStop = null;
+        }
+
+        // Reset the stop clicked flag for the next event
+        _stopClicked = false;
+    }
+
+    private async Task OnMouseMove(MouseEventArgs e)
+    {
+        if (!_isDragging || SelectedStop == null)
+            return;
+
+        var rect = await ElementReferenceExtensions.MudGetBoundingClientRectAsync(_stopMarkersColorElement);
+
+        if (IsEmpty(rect))
+            rect = await ElementReferenceExtensions.MudGetBoundingClientRectAsync(_stopMarkersOpacityElement);
+
+        var newPos = e.ClientX - rect.Left;
+        SelectedStop.Position = (float)Math.Clamp(newPos / rect.Width * 100, 0, 100);
+        
+        //await UpdateGradient();
+    }
+
+    private async Task OnColorMouseUp(MouseEventArgs e)
+    {
+        if (SelectedStop == null)
+            await AddColorStop(e);
+
+        _isDragging = false;
+
+        await UpdateGradient();
+    }
+
+    private async Task OnMouseLeave(MouseEventArgs e)
+    {
+        _isDragging = false;
+
+        await UpdateGradient();
+    }
+
+    private async Task OnOpacityMouseUp(MouseEventArgs e)
+    {
+        if (SelectedStop == null)
+            await AddOpacityStop(e);
+
+        _isDragging = false;
+
+        await UpdateGradient();
+    }
+
+    public string GetColorStyle()
+    {
+        return SelectedStop is ColorStop colorStop ? colorStop.ToString() : string.Empty;
+    }
+
+    private float GetStopPosition()
+    {
+        // Return the position of the selected stop, or a default value if none is selected
+        return SelectedStop?.Position ?? 0f;
+    }
+
+    private float GetOpacityValue()
+    {
+        // Return the opacity value for OpacityStop or 0 if no stop is selected or it's not an OpacityStop
+        if (SelectedStop is OpacityStop opacityStop)
+            return opacityStop.Opacity;
+
+        return 0f; // Default opacity value
+    }
+
+    private MudColor SelectedColor
+    {
+        get
+        {
+            if (SelectedStop is ColorStop colorStop)
+                return colorStop.Color;
+            return new MudColor(); // Default color if no ColorStop selected
+        }
+        set
+        {
+            if (SelectedStop is ColorStop colorStop)
+            {
+                colorStop.Color = value;
+                _ = UpdateGradient();
+            }
+        }
+    }
+
+    private string ColorStyle
+    {
+        get => GetColorStyle();
+        set
+        {
+            if (SelectedStop is ColorStop colorStop)
+            {
+                colorStop.Color = new MudColor(value);
+                _ = UpdateGradient();
+            }
+        }
+    }
+
+
+    private float StopPosition
+    {
+        get => GetStopPosition();
+        set
+        {
+            if (SelectedStop != null)
+            {
+                SelectedStop.Position = value;
+                _ = UpdateGradient();
+            }
+        }
+    }
+
+    public float OpacityValue
+    {
+        get => GetOpacityValue();
+        set
+        {
+            if (SelectedStop is OpacityStop opacityStop)
+            {
+                opacityStop.Opacity = value;
+                _ = UpdateGradient();
+            }
+        }
+    }
+
+    private bool IsEmpty(BoundingClientRect rect) => rect.Width == 0 && rect.Height == 0;
+
+    private bool Contains(BoundingClientRect rect, double x, double y)
+    {
+        return x >= rect.Left && x <= rect.Right && y >= rect.Top && y <= rect.Bottom;
+    }
+
+    private float? GetSelectedStopPosition() => SelectedStop?.Position ?? 0;
+
+    private bool IsColorStop => SelectedStop is ColorStop;
+
+    private bool IsOpacityStop => SelectedStop is OpacityStop;
+}

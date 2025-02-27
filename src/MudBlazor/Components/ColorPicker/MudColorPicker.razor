@@ -80,12 +80,12 @@
                     @if (_activeColorPickerView is ColorPickerView.Grid or ColorPickerView.GridCompact)
                     {
                         <div class="mud-picker-color-grid">
-                            @foreach (var item in _gridList)
+                            @for (int i = 0; i < _gridList.Count; i++)
                             {
-                                <div class="@GetColorDotClass(item)"
-                                     style="@($"background: {item.ToString(MudColorOutputFormats.RGBA)};")"
-                                     @onclick="@GetSelectPaletteColorCallback(item)"
-                                     aria-label="@Localizer[LanguageResource.MudColorPicker_ColorDot]"></div>
+                                    <div class="@GetColorDotClass(i)"
+                                         style="@($"background: {_gridList[i].ToString(MudColorOutputFormats.RGBA)};")"
+                                         @onclick="@GetSelectPaletteColorCallback(PaletteType.Grid, i, _gridList[i])"
+                                         aria-label="@Localizer[LanguageResource.MudColorPicker_ColorDot]"></div>
                             }
                         </div>
                     }
@@ -139,11 +139,13 @@
                                 @if (_collectionOpen)
                                 {
                                     <div class="mud-picker-color-collection">
-                                        @foreach (var item in Palette.Take(5))
+                                        @for (int i = 0; i < 8; i++)
                                         {
-                                            <div class="@GetColorDotClass(item)"
-                                                 style="@($"background: {item.ToString(MudColorOutputFormats.RGBA)};")"
-                                                 @onclick="@GetSelectPaletteColorCallback(item)"
+                                            if (i >= Palette.Count)
+                                                break;
+                                            <div class="@GetColorDotClass(i)"
+                                                 style="@($"background: {Palette[i].ToString(MudColorOutputFormats.RGBA)};")"
+                                                 @onclick="@GetSelectPaletteColorCallback(PaletteType.Main, i, Palette[i])"
                                                  aria-label="@Localizer[LanguageResource.MudColorPicker_PaletteColor]"></div>
                                         }
                                     </div>
@@ -233,6 +235,8 @@
                                                           HelperText="HEX"
                                                           Required="@Required" />
                                             break;
+                                        default:
+                                            break;
                                     }
 
                                     @if (ShowAlpha && ColorPickerMode != ColorPickerMode.HEX)
@@ -267,11 +271,11 @@
                 {
                     <div class="mud-picker-color-view">
                         <div class="mud-picker-color-view-collection">
-                            @foreach (var item in Palette)
+                            @for (int i = 0; i < Palette.Count; i++)
                             {
-                                <div class="@GetColorDotClass(item)"
-                                     style="@($"background: {item.ToString(MudColorOutputFormats.RGBA)};")"
-                                     @onclick="@GetSelectPaletteColorCallback(item)"
+                                <div class="@GetColorDotClass(i)"
+                                     style="@($"background: {Palette[i].ToString(MudColorOutputFormats.RGBA)};")"
+                                     @onclick="@GetSelectPaletteColorCallback(PaletteType.Main, i, Palette[i])"
                                      aria-label="@Localizer[LanguageResource.MudColorPicker_PaletteColor]"></div>
                             }
                         </div>
